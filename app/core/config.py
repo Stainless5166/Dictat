@@ -169,6 +169,7 @@ class Settings(BaseSettings):
     # Testing
     TEST_DATABASE_URL: Optional[str] = None
     TEST_REDIS_URL: Optional[str] = None
+    SKIP_DOCKER_TESTS: bool = False  # Skip tests requiring Docker (DB, Redis, OPA)
 
     # Feature Flags
     FEATURE_WEBSOCKET_ENABLED: bool = True

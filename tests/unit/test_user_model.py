@@ -20,9 +20,12 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User, UserRole
 from app.core.security import hash_password, verify_password
+from tests.conftest import skip_docker
 
 
 @pytest.mark.unit
+@skip_docker
+@skip_docker
 class TestUserModelBasics:
     """Test basic User model functionality"""
 
@@ -89,6 +92,8 @@ class TestUserModelBasics:
 
 
 @pytest.mark.unit
+@skip_docker
+@skip_docker
 class TestUserEmail:
     """Test user email functionality"""
 
@@ -149,6 +154,8 @@ class TestUserEmail:
 
 
 @pytest.mark.unit
+@skip_docker
+@skip_docker
 class TestUserPassword:
     """Test user password functionality"""
 
@@ -194,6 +201,7 @@ class TestUserPassword:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserRoles:
     """Test user role functionality"""
 
@@ -263,6 +271,7 @@ class TestUserRoles:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserTimestamps:
     """Test user timestamp functionality"""
 
@@ -337,6 +346,7 @@ class TestUserTimestamps:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserActiveStatus:
     """Test user active/inactive status"""
 
@@ -399,6 +409,7 @@ class TestUserActiveStatus:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserVerification:
     """Test user verification status"""
 
@@ -444,6 +455,7 @@ class TestUserVerification:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserSoftDelete:
     """Test user soft delete functionality"""
 
@@ -487,6 +499,7 @@ class TestUserSoftDelete:
 
 
 @pytest.mark.unit
+@skip_docker
 class TestUserQueries:
     """Test querying users from database"""
 
