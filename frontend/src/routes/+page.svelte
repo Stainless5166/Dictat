@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { authStore } from '$stores/auth';
+  import { isAuthenticated } from '$stores/auth';
 
   onMount(() => {
     // Redirect based on auth status
-    if ($authStore.isAuthenticated) {
+    if ($isAuthenticated) {
       goto('/dashboard');
     } else {
       goto('/auth/login');

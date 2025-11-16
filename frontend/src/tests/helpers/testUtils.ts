@@ -4,6 +4,7 @@
 
 import { render, type RenderResult } from '@testing-library/svelte';
 import type { ComponentType, SvelteComponent } from 'svelte';
+import { vi } from 'vitest';
 
 /**
  * Render a Svelte component with default props
@@ -12,7 +13,7 @@ export function renderComponent<T extends SvelteComponent>(
   component: ComponentType<T>,
   props?: Record<string, any>
 ): RenderResult<T> {
-  return render(component, { props });
+  return render(component, props ? { props } : {});
 }
 
 /**
@@ -49,7 +50,7 @@ export function createMockFile(
  * Mock fetch response
  */
 export function mockFetchResponse(data: any, status = 200): void {
-  global.fetch = vi.fn().mockResolvedValue({
+  (globalThis as any).fetch = vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
     status,
     statusText: 'OK',
@@ -65,7 +66,7 @@ export function mockFetchResponse(data: any, status = 200): void {
  * Mock fetch error
  */
 export function mockFetchError(error: any, status = 500): void {
-  global.fetch = vi.fn().mockResolvedValue({
+  (globalThis as any).fetch = vi.fn().mockResolvedValue({
     ok: false,
     status,
     statusText: 'Error',

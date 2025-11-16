@@ -11,7 +11,7 @@ import type {
   DictationResponse,
   TranscriptionResponse
 } from '$lib/types/api-types';
-import { UserRole, DictationStatus, DictationPriority } from '$lib/types/api-types';
+import { UserRole, DictationStatus, DictationPriority, TranscriptionStatus } from '$lib/types/api-types';
 
 export const mockUser: CurrentUser = {
   id: 1,
@@ -93,7 +93,7 @@ export const mockTranscription: TranscriptionResponse = {
   reviewer_id: null,
   content: '# Test Transcription\n\nThis is a test.',
   version: 1,
-  status: 'draft',
+  status: TranscriptionStatus.DRAFT,
   review_notes: null,
   rejection_reason: null,
   created_at: '2025-01-01T12:00:00Z',

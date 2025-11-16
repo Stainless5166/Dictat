@@ -14,7 +14,12 @@
   let transcriptionId: number | null = null;
 
   onMount(async () => {
-    dictationId = parseInt($page.params.id);
+    const id = $page.params.id;
+    if (!id) {
+      goto('/dashboard');
+      return;
+    }
+    dictationId = parseInt(id);
     await dictationsStore.loadDictation(dictationId);
 
     // For doctors: load the transcription if it exists

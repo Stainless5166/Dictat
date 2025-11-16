@@ -13,7 +13,12 @@
   let submitting = false;
 
   onMount(async () => {
-    dictationId = parseInt($page.params.id);
+    const id = $page.params.id;
+    if (!id) {
+      goto('/dashboard');
+      return;
+    }
+    dictationId = parseInt(id);
 
     // Load dictation details
     await dictationsStore.loadDictation(dictationId);

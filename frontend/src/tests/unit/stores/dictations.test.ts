@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { get } from 'svelte/store';
 import { dictationsStore } from '$stores/dictations';
 import { createMockApi, mockDictationList, mockDictation } from '../../helpers/mockApi';
-import { DictationPriority } from '$lib/types/api-types';
+import { DictationPriority, DictationStatus } from '$lib/types/api-types';
 import { createMockFile } from '../../helpers/testUtils';
 
 // Mock the API
@@ -33,12 +33,12 @@ describe('Dictations Store', () => {
       const { api } = await import('$lib/api');
 
       await dictationsStore.loadList({
-        status: 'pending',
+        status: DictationStatus.PENDING,
         priority: DictationPriority.HIGH
       });
 
       expect(api.dictations.list).toHaveBeenCalledWith({
-        status: 'pending',
+        status: DictationStatus.PENDING,
         priority: DictationPriority.HIGH
       });
     });

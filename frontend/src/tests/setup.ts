@@ -3,9 +3,11 @@
  *
  * Runs before all tests to set up the testing environment
  */
+/// <reference types="vitest/globals" />
 
 import { beforeAll, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/svelte';
+import '@testing-library/jest-dom/vitest';
 
 // Mock browser APIs
 beforeAll(() => {
@@ -16,10 +18,10 @@ beforeAll(() => {
     removeItem: vi.fn(),
     clear: vi.fn()
   };
-  global.localStorage = localStorageMock as any;
+  (globalThis as any).localStorage = localStorageMock;
 
   // Mock fetch
-  global.fetch = vi.fn();
+  (globalThis as any).fetch = vi.fn();
 
   // Mock window.location
   delete (window as any).location;

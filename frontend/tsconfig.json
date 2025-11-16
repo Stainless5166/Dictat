@@ -10,17 +10,6 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler",
-    "paths": {
-      "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"],
-      "$components": ["./src/lib/components"],
-      "$components/*": ["./src/lib/components/*"],
-      "$stores": ["./src/lib/stores"],
-      "$stores/*": ["./src/lib/stores/*"],
-      "$types": ["./src/lib/types"],
-      "$types/*": ["./src/lib/types/*"],
-      "$utils": ["./src/lib/utils"],
-      "$utils/*": ["./src/lib/utils/*"]
-    }
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   }
 }
