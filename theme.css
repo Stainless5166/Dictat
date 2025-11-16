@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+@import "tailwindcss";
+@source "hugo_stats.json";
+
+/* Define custom CSS properties (variables) for your fonts */
+@theme {
+  --color-bg: #f5f2ec;
+  --color-primary: #1c2c25;
+  --color-accent: #b7a58a;
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Montserrat', sans-serif; 
+}
