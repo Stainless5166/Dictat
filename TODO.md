@@ -176,8 +176,8 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 15. Testing - Frontend (2 tasks)
 
-- [ ] Write frontend unit tests (components)
-- [ ] Write frontend integration tests (Playwright/Cypress)
+- [x] Write frontend unit tests (Vitest + Testing Library)
+- [x] Write frontend E2E tests (Playwright)
 
 ---
 
@@ -260,7 +260,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 57 / 140 (40.7%)
+**Completed**: 59 / 140 (42.1%)
 
 ### By Category
 - Project Setup: 5/5 ✅
@@ -277,7 +277,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 - Frontend Secretary: 8/9
 - Frontend Shared: 2/4
 - Backend Testing: 0/10
-- Frontend Testing: 0/2
+- Frontend Testing: 2/2 ✅
 - Docker: 0/5
 - Terraform & Infrastructure: 0/12
 - Production Deployment: 0/13
