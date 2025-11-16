@@ -546,7 +546,7 @@ Comprehensive testing plan for ensuring quality, security, and compliance.
 
 ### 3.2 Mock Services
 
-- [ ] Mock NFS storage (local filesystem)
+- [ ] Mock Docker volume storage (local filesystem for testing)
 - [ ] Mock OPA service
 - [ ] Mock Redis
 - [ ] Mock email service

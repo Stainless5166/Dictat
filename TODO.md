@@ -240,27 +240,27 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ---
 
-## 20. Documentation (10 tasks)
+## 20. Documentation (11 tasks)
 
 - [x] Write comprehensive README.md
+- [x] Create TODO.md with development roadmap
+- [x] Create Test_Targets.md with testing strategy
+- [x] Create claude.md with AI development guidelines
+- [x] Create architecture diagrams (Mermaid)
 - [ ] Document API endpoints (OpenAPI/Swagger)
 - [ ] Create deployment documentation
 - [ ] Write developer setup guide
 - [ ] Create user manual for doctors
 - [ ] Create user manual for secretaries
 - [ ] Document OPA policies and authorization rules
-- [x] Create architecture diagrams (Mermaid)
-- [ ] Document monitoring and alerting setup
-- [ ] Create disaster recovery documentation
-- [ ] Create GDPR compliance documentation
 
 ---
 
 ## Progress Summary
 
-**Total Tasks**: 139
+**Total Tasks**: 140
 
-**Completed**: 2 / 139 (1.4%)
+**Completed**: 5 / 140 (3.6%)
 
 ### By Category
 - Project Setup: 0/5
@@ -282,7 +282,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 - Terraform & Infrastructure: 0/12
 - Production Deployment: 0/13
 - CI/CD: 0/8
-- Documentation: 2/11
+- Documentation: 5/11
 
 ---
 
