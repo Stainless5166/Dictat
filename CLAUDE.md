@@ -1058,6 +1058,7 @@ docker-compose exec postgres createdb dictat_test
 - ✅ Run `tflint` and `checkov` on Terraform
 - ✅ Stream audio files, never cache
 - ✅ Use OPA for authorization decisions
+- ✅ Update the TODO.md list before commiting
 
 ---
 
@@ -1104,7 +1105,6 @@ checkov -d .               # Security scan
 ## Contact & Support
 
 - **Issues**: Create GitHub issue with `claude/` branch prefix
-- **Reviewer**: Always add `ArthurClune` as PR reviewer
 - **Documentation**: See README.md, TODO.md, Test_Targets.md
 
 ---
