@@ -11,72 +11,72 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 1. Project Setup (5 tasks)
 
-- [ ] Initialize UV project and create pyproject.toml
-- [ ] Define all Python dependencies (FastAPI, SQLAlchemy, Alembic, asyncpg, etc.)
-- [ ] Create .env.example with all required environment variables
-- [ ] Set up Pydantic Settings for configuration management
-- [ ] Configure SQLAlchemy with asyncpg for PostgreSQL
+- [x] Initialize UV project and create pyproject.toml
+- [x] Define all Python dependencies (FastAPI, SQLAlchemy, Alembic, asyncpg, etc.)
+- [x] Create .env.example with all required environment variables
+- [x] Set up Pydantic Settings for configuration management
+- [x] Configure SQLAlchemy with asyncpg for PostgreSQL
 
 ---
 
 ## 2. Database Setup (6 tasks)
 
-- [ ] Design database schema (User, Role, Dictation, Transcription, AuditLog tables)
-- [ ] Create SQLAlchemy models with proper relationships
-- [ ] Set up Alembic for database migrations
-- [ ] Create initial migration for all database tables
-- [ ] Add database indexes for performance optimization
-- [ ] Create database seed script for development data
+- [x] Design database schema (User, Role, Dictation, Transcription, AuditLog tables)
+- [x] Create SQLAlchemy models with proper relationships
+- [x] Set up Alembic for database migrations
+- [x] Create initial migration for all database tables
+- [x] Add database indexes for performance optimization
+- [x] Create database seed script for development data
 
 ---
 
 ## 3. Authentication (6 tasks)
 
-- [ ] Implement JWT token generation and validation
-- [ ] Create password hashing utilities (bcrypt/argon2)
-- [ ] Build user registration endpoint with validation
-- [ ] Build login endpoint returning JWT tokens
-- [ ] Create JWT dependency for protected routes
-- [ ] Implement refresh token mechanism
+- [x] Implement JWT token generation and validation
+- [x] Create password hashing utilities (bcrypt/argon2)
+- [x] Build user registration endpoint with validation
+- [x] Build login endpoint returning JWT tokens
+- [x] Create JWT dependency for protected routes
+- [x] Implement refresh token mechanism
 
 ---
 
 ## 4. Authorization - Open Policy Agent (5 tasks)
 
-- [ ] Set up Open Policy Agent (OPA) container in Docker Compose
-- [ ] Write OPA policies for role-based access (doctor/secretary/admin)
-- [ ] Create OPA client integration in FastAPI
-- [ ] Build authorization dependency using OPA
-- [ ] Test OPA policies for all user roles and permissions
+- [x] Set up Open Policy Agent (OPA) container in Docker Compose
+- [x] Write OPA policies for role-based access (doctor/secretary/admin)
+- [x] Create OPA client integration in FastAPI
+- [x] Build authorization dependency using OPA
+- [x] Test OPA policies for all user roles and permissions
 
 ---
 
 ## 5. File Storage - Docker Volumes (8 tasks)
 
-- [ ] Configure Docker volume for persistent audio storage
-- [ ] Create volume mount definitions in docker-compose.yml
-- [ ] Implement audio file upload endpoint with streaming
-- [ ] Add audio format validation (mp3, wav, m4a, ogg)
-- [ ] Implement chunked upload for large audio files
-- [ ] Create audio streaming endpoint (no local caching)
-- [ ] Add audio playback range request support (HTTP 206)
-- [ ] Implement file deletion endpoint with security checks
+- [x] Configure Docker volume for persistent audio storage
+- [x] Create volume mount definitions in docker-compose.yml
+- [x] Implement audio file upload endpoint with streaming
+- [x] Add audio format validation (mp3, wav, m4a, ogg)
+- [x] Implement chunked upload for large audio files
+- [x] Create audio streaming endpoint (no local caching)
+- [x] Add audio playback range request support (HTTP 206)
+- [x] Implement file deletion endpoint with security checks
 
 ---
 
 ## 6. Core API - Dictations & Transcriptions (11 tasks)
 
-- [ ] Create dictation CRUD endpoints
-- [ ] Build dictation listing with pagination and filtering
-- [ ] Implement dictation assignment to secretaries
-- [ ] Create work queue endpoint for secretaries
-- [ ] Build dictation claiming mechanism
-- [ ] Implement status transitions (pending→in_progress→completed→reviewed)
-- [ ] Create transcription CRUD endpoints
+- [x] Create dictation CRUD endpoints
+- [x] Build dictation listing with pagination and filtering
+- [x] Implement dictation assignment to secretaries
+- [x] Create work queue endpoint for secretaries
+- [x] Build dictation claiming mechanism
+- [x] Implement status transitions (pending→in_progress→completed→reviewed)
+- [x] Create transcription CRUD endpoints
 - [ ] Add markdown validation for transcriptions
-- [ ] Implement transcription autosave functionality
-- [ ] Build review/approval endpoint for doctors
-- [ ] Create revision history for transcriptions
+- [x] Implement transcription autosave functionality
+- [x] Build review/approval endpoint for doctors
+- [ ] Create revision history for transcriptions (Phase 3)
 
 ---
 
@@ -260,14 +260,14 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 5 / 140 (3.6%)
+**Completed**: 35 / 140 (25.0%)
 
 ### By Category
-- Project Setup: 0/5
-- Database: 0/6
-- Authentication: 0/6
-- Authorization (OPA): 0/5
-- File Storage (Docker Volumes): 0/8
+- Project Setup: 5/5
+- Database: 6/6
+- Authentication: 6/6
+- Authorization (OPA): 5/5
+- File Storage (Docker Volumes): 8/8
 - Core API: 0/11
 - Background Tasks: 0/5
 - Security & Compliance (GDPR): 0/14

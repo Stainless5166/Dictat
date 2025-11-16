@@ -74,36 +74,49 @@ class OPAClient:
             OPAError: If policy evaluation fails
             AuthorizationError: If action is explicitly denied
         """
-        # TODO: Implement OPA policy evaluation
-        # input_doc = {
-        #     "input": {
-        #         "user": {
-        #             "id": user_id,
-        #             "role": user_role,
-        #         },
-        #         "action": action,
-        #         "resource": {
-        #             "type": resource_type,
-        #             "id": resource_id,
-        #             "owner_id": resource_owner_id,
-        #         },
-        #         "context": additional_context or {},
-        #     }
-        # }
-        #
-        # async with httpx.AsyncClient() as client:
-        #     response = await client.post(
-        #         f"{self.base_url}{self.policy_path}",
-        #         json=input_doc,
-        #         timeout=self.timeout,
-        #     )
-        #     response.raise_for_status()
-        #     result = response.json()
-        #     return result.get("result", False)
+        # Build OPA input document
+        input_doc = {
+            "input": {
+                "user": {
+                    "id": user_id,
+                    "role": user_role,
+                },
+                "action": action,
+                "resource": {
+                    "type": resource_type,
+                    "id": resource_id,
+                    "owner_id": resource_owner_id,
+                },
+                "context": additional_context or {},
+            }
+        }
 
-        # Temporary fallback: basic role-based access
-        logger.warning("OPA not implemented, using fallback authorization")
-        return self._fallback_authorization(user_role, action, resource_type, user_id, resource_owner_id)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    f"{self.base_url}{self.policy_path}",
+                    json=input_doc,
+                )
+                response.raise_for_status()
+                result = response.json()
+                allowed = result.get("result", False)
+
+                logger.info(
+                    f"OPA policy evaluation: user={user_id}, role={user_role}, "
+                    f"action={action}, resource={resource_type}, allowed={allowed}"
+                )
+
+                return allowed
+
+        except httpx.HTTPError as e:
+            logger.error(f"OPA connection error: {e}. Using fallback authorization.")
+            # Fallback to basic RBAC if OPA is unavailable
+            return self._fallback_authorization(
+                user_role, action, resource_type, user_id, resource_owner_id
+            )
+        except Exception as e:
+            logger.error(f"OPA policy evaluation error: {e}")
+            raise OPAError(f"Failed to evaluate authorization policy: {str(e)}")
 
     def _fallback_authorization(
         self,

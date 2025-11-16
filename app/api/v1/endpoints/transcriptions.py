@@ -1,40 +1,50 @@
 """
 Transcription endpoints for dictation transcription workflow
 
-TODO Phase 2:
+Endpoints:
 - POST /transcriptions - Create new transcription (secretary only)
 - GET /transcriptions/{id} - Get transcription details
-- PUT /transcriptions/{id} - Update transcription content (autosave)
+- PATCH /transcriptions/{id} - Update transcription content (autosave)
 - POST /transcriptions/{id}/submit - Submit for review
-- POST /transcriptions/{id}/approve - Approve transcription (doctor only)
-- POST /transcriptions/{id}/reject - Reject transcription (doctor only)
-- GET /transcriptions/{id}/history - Get revision history
+- POST /transcriptions/{id}/review - Approve or reject (doctor only)
+- GET /transcriptions/{id}/history - Get revision history (Phase 3)
 """
 
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import check_resource_permission, require_role
+from app.api.v1.endpoints.auth import get_current_user
+from app.core.logging import get_logger
 from app.db.session import get_db
+from app.models.dictation import Dictation, DictationStatus
+from app.models.transcription import Transcription, TranscriptionStatus
+from app.models.user import User, UserRole
+from app.schemas.transcription import (
+    TranscriptionCreate,
+    TranscriptionResponse,
+    TranscriptionReview,
+    TranscriptionUpdate,
+)
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TranscriptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transcription(
-    # TODO: Add request body with dictation_id and initial content
+    data: TranscriptionCreate,
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(require_role(UserRole.SECRETARY)),
+) -> Any:
     """
     Create new transcription for dictation
 
-    TODO Phase 2:
-    - Require secretary role
-    - Verify dictation is claimed by current secretary
-    - Validate dictation doesn't already have transcription
-    - Create transcription with draft status
-    - Set version to 1
-    - Log creation in audit log
+    **Permissions**: Secretaries only
 
     Request Body:
     - dictation_id: ID of dictation to transcribe
@@ -49,23 +59,63 @@ async def create_transcription(
     - 409: Transcription already exists
     - 404: Dictation not found
     """
-    pass
+    # Fetch dictation
+    result = await db.execute(select(Dictation).where(Dictation.id == data.dictation_id))
+    dictation = result.scalar_one_or_none()
+
+    if not dictation or dictation.deleted_at is not None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dictation not found")
+
+    # Verify dictation is claimed by current secretary
+    if dictation.secretary_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dictation must be claimed by you before creating transcription",
+        )
+
+    # Check if transcription already exists
+    existing_result = await db.execute(
+        select(Transcription).where(Transcription.dictation_id == data.dictation_id)
+    )
+    existing = existing_result.scalar_one_or_none()
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Transcription already exists for this dictation",
+        )
+
+    # Create transcription
+    transcription = Transcription(
+        dictation_id=data.dictation_id,
+        secretary_id=current_user.id,
+        content=data.content,
+        status=TranscriptionStatus.DRAFT,
+        version=1,
+    )
+
+    db.add(transcription)
+    await db.commit()
+    await db.refresh(transcription)
+
+    logger.info(
+        f"Transcription created: id={transcription.id}, dictation_id={data.dictation_id}, "
+        f"secretary_id={current_user.id}"
+    )
+
+    return transcription
 
 
-@router.get("/{transcription_id}")
+@router.get("/{transcription_id}", response_model=TranscriptionResponse)
 async def get_transcription(
     transcription_id: int = Path(..., gt=0),
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(get_current_user),
+) -> Any:
     """
     Get transcription details
 
-    TODO Phase 2:
-    - Check authorization (secretary who created, doctor who owns dictation, or admin)
-    - Fetch transcription with relationships
-    - Include dictation info
-    - Log access in audit log
+    **Authorization**: Secretary who created, doctor who owns dictation, or admin
 
     Path Parameters:
     - transcription_id: ID of transcription
@@ -77,34 +127,59 @@ async def get_transcription(
     - 403: Not authorized
     - 404: Transcription not found
     """
-    pass
+    # Fetch transcription with dictation
+    result = await db.execute(select(Transcription).where(Transcription.id == transcription_id))
+    transcription = result.scalar_one_or_none()
+
+    if not transcription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Transcription not found"
+        )
+
+    # Fetch associated dictation for authorization check
+    dictation_result = await db.execute(
+        select(Dictation).where(Dictation.id == transcription.dictation_id)
+    )
+    dictation = dictation_result.scalar_one_or_none()
+
+    if not dictation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dictation not found")
+
+    # Check authorization
+    await check_resource_permission(
+        current_user=current_user,
+        action="read",
+        resource_type="transcription",
+        resource_id=transcription.id,
+        resource_owner_id=dictation.doctor_id,
+    )
+
+    return transcription
 
 
-@router.put("/{transcription_id}")
+@router.patch("/{transcription_id}", response_model=TranscriptionResponse)
 async def update_transcription(
     transcription_id: int = Path(..., gt=0),
-    # TODO: Add request body with content and autosave flag
+    data: TranscriptionUpdate = ...,
+    is_autosave: bool = Query(False, description="Whether this is an autosave"),
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(require_role(UserRole.SECRETARY)),
+) -> Any:
     """
     Update transcription content (autosave support)
 
-    TODO Phase 2:
-    - Check authorization (secretary who created only)
-    - Validate transcription is in draft or revised status
-    - Validate markdown content
-    - Update content
-    - Update last_autosave_at timestamp
-    - Optionally create revision history entry
-    - Log update in audit log (only for manual saves, not autosaves)
+    **Permissions**: Secretary who created only
+
+    Supports autosave functionality with last_autosave_at tracking.
 
     Path Parameters:
     - transcription_id: ID of transcription
 
+    Query Parameters:
+    - is_autosave: Whether this is an autosave (default false)
+
     Request Body:
     - content: Updated transcription content (markdown)
-    - is_autosave: Whether this is an autosave (default false)
 
     Returns:
     - Updated transcription object
@@ -114,27 +189,67 @@ async def update_transcription(
     - 404: Transcription not found
     - 409: Transcription already submitted/approved
     """
-    pass
+    # Fetch transcription
+    result = await db.execute(select(Transcription).where(Transcription.id == transcription_id))
+    transcription = result.scalar_one_or_none()
+
+    if not transcription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Transcription not found"
+        )
+
+    # Check authorization - only creator can edit
+    if transcription.secretary_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Can only edit transcriptions you created",
+        )
+
+    # Check status - can only edit draft or rejected transcriptions
+    if transcription.status not in [TranscriptionStatus.DRAFT, TranscriptionStatus.REJECTED]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot edit transcription with status '{transcription.status.value}'",
+        )
+
+    # Update content
+    transcription.content = data.content
+
+    # Update timestamps
+    if is_autosave:
+        transcription.last_autosave_at = datetime.utcnow()
+    else:
+        # Manual save - increment version for revision history (Phase 3)
+        # transcription.version += 1
+        pass
+
+    # If editing after rejection, update status to revised
+    if transcription.status == TranscriptionStatus.REJECTED:
+        transcription.status = TranscriptionStatus.REVISED
+
+    await db.commit()
+    await db.refresh(transcription)
+
+    if not is_autosave:
+        logger.info(
+            f"Transcription updated: id={transcription_id}, secretary_id={current_user.id}"
+        )
+
+    return transcription
 
 
-@router.post("/{transcription_id}/submit")
+@router.post("/{transcription_id}/submit", response_model=TranscriptionResponse)
 async def submit_transcription(
     transcription_id: int = Path(..., gt=0),
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(require_role(UserRole.SECRETARY)),
+) -> Any:
     """
     Submit transcription for doctor review
 
-    TODO Phase 2:
-    - Check authorization (secretary who created only)
-    - Validate transcription is in draft status
-    - Validate content is not empty
-    - Update status to submitted
-    - Set submitted_at timestamp
-    - Update dictation status to completed
-    - Send notification to doctor
-    - Log submission in audit log
+    **Permissions**: Secretary who created only
+
+    Updates transcription status to submitted and dictation status to completed.
 
     Path Parameters:
     - transcription_id: ID of transcription
@@ -148,35 +263,82 @@ async def submit_transcription(
     - 400: Transcription already submitted
     - 422: Content is empty or invalid
     """
-    pass
+    # Fetch transcription
+    result = await db.execute(select(Transcription).where(Transcription.id == transcription_id))
+    transcription = result.scalar_one_or_none()
+
+    if not transcription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Transcription not found"
+        )
+
+    # Check authorization
+    if transcription.secretary_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Can only submit transcriptions you created",
+        )
+
+    # Validate status
+    if transcription.status not in [TranscriptionStatus.DRAFT, TranscriptionStatus.REVISED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot submit transcription with status '{transcription.status.value}'",
+        )
+
+    # Validate content
+    if not transcription.content or len(transcription.content.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Transcription content cannot be empty",
+        )
+
+    # Update transcription status
+    transcription.status = TranscriptionStatus.SUBMITTED
+    transcription.submitted_at = datetime.utcnow()
+
+    # Update dictation status
+    dictation_result = await db.execute(
+        select(Dictation).where(Dictation.id == transcription.dictation_id)
+    )
+    dictation = dictation_result.scalar_one_or_none()
+
+    if dictation:
+        dictation.status = DictationStatus.COMPLETED
+        dictation.completed_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(transcription)
+
+    logger.info(
+        f"Transcription submitted: id={transcription_id}, dictation_id={transcription.dictation_id}"
+    )
+
+    return transcription
 
 
-@router.post("/{transcription_id}/approve")
-async def approve_transcription(
+@router.post("/{transcription_id}/review", response_model=TranscriptionResponse)
+async def review_transcription(
     transcription_id: int = Path(..., gt=0),
-    # TODO: Add request body with optional review notes
+    review_data: TranscriptionReview = ...,
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(require_role(UserRole.DOCTOR, UserRole.ADMIN)),
+) -> Any:
     """
-    Approve transcription
+    Approve or reject transcription
 
-    TODO Phase 2:
-    - Check authorization (doctor who owns dictation only)
-    - Validate transcription is submitted
-    - Update status to approved
-    - Set reviewer_id to current doctor
-    - Set reviewed_at timestamp
-    - Update dictation status to reviewed
-    - Add review notes (optional)
-    - Send notification to secretary
-    - Log approval in audit log
+    **Permissions**: Doctor who owns dictation, or admin
+
+    Action can be 'approve' or 'reject'.
+    If rejecting, rejection_reason is required.
 
     Path Parameters:
     - transcription_id: ID of transcription
 
     Request Body:
+    - action: 'approve' or 'reject' (required)
     - review_notes: Optional notes from doctor
+    - rejection_reason: Required if rejecting
 
     Returns:
     - Updated transcription object
@@ -185,74 +347,101 @@ async def approve_transcription(
     - 403: Not authorized (requires doctor role)
     - 404: Transcription not found
     - 400: Transcription not submitted
+    - 422: Rejection reason required when rejecting
     """
-    pass
+    # Fetch transcription
+    result = await db.execute(select(Transcription).where(Transcription.id == transcription_id))
+    transcription = result.scalar_one_or_none()
 
+    if not transcription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Transcription not found"
+        )
 
-@router.post("/{transcription_id}/reject")
-async def reject_transcription(
-    transcription_id: int = Path(..., gt=0),
-    # TODO: Add request body with rejection reason
-    db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
-    """
-    Reject transcription and request revision
+    # Fetch dictation for authorization
+    dictation_result = await db.execute(
+        select(Dictation).where(Dictation.id == transcription.dictation_id)
+    )
+    dictation = dictation_result.scalar_one_or_none()
 
-    TODO Phase 2:
-    - Check authorization (doctor who owns dictation only)
-    - Validate transcription is submitted
-    - Update status to rejected
-    - Set reviewer_id to current doctor
-    - Set reviewed_at timestamp
-    - Add rejection reason (required)
-    - Update dictation status to rejected
-    - Send notification to secretary with feedback
-    - Log rejection in audit log
+    if not dictation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dictation not found")
 
-    Path Parameters:
-    - transcription_id: ID of transcription
+    # Check authorization - must be the doctor who owns the dictation, or admin
+    if current_user.role != UserRole.ADMIN and dictation.doctor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Can only review transcriptions for your own dictations",
+        )
 
-    Request Body:
-    - rejection_reason: Reason for rejection (required)
-    - review_notes: Additional notes
+    # Validate status
+    if transcription.status != TranscriptionStatus.SUBMITTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot review transcription with status '{transcription.status.value}'",
+        )
 
-    Returns:
-    - Updated transcription object
+    # Set reviewer and timestamp
+    transcription.reviewer_id = current_user.id
+    transcription.reviewed_at = datetime.utcnow()
 
-    Raises:
-    - 403: Not authorized (requires doctor role)
-    - 404: Transcription not found
-    - 400: Transcription not submitted
-    - 422: Rejection reason required
-    """
-    pass
+    if review_data.action == "approve":
+        # Approve transcription
+        transcription.status = TranscriptionStatus.APPROVED
+        transcription.review_notes = review_data.review_notes
+
+        # Update dictation status
+        dictation.status = DictationStatus.REVIEWED
+
+        logger.info(
+            f"Transcription approved: id={transcription_id}, "
+            f"dictation_id={transcription.dictation_id}, reviewer_id={current_user.id}"
+        )
+
+    elif review_data.action == "reject":
+        # Reject transcription
+        transcription.status = TranscriptionStatus.REJECTED
+        transcription.rejection_reason = review_data.rejection_reason
+        transcription.review_notes = review_data.review_notes
+
+        # Update dictation status
+        dictation.status = DictationStatus.REJECTED
+
+        logger.info(
+            f"Transcription rejected: id={transcription_id}, "
+            f"dictation_id={transcription.dictation_id}, reviewer_id={current_user.id}, "
+            f"reason={review_data.rejection_reason}"
+        )
+
+    await db.commit()
+    await db.refresh(transcription)
+
+    return transcription
 
 
 @router.get("/{transcription_id}/history")
 async def get_revision_history(
     transcription_id: int = Path(..., gt=0),
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),  # TODO: Uncomment when implemented
-):
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
     """
     Get revision history for transcription
 
-    TODO Phase 3:
-    - Check authorization
-    - Fetch all revisions
-    - Return sorted by version/timestamp
-    - Include author information
-    - Log access in audit log
+    **TODO Phase 3**: Implement revision history tracking
+
+    Currently returns placeholder message.
 
     Path Parameters:
     - transcription_id: ID of transcription
 
     Returns:
-    - List of revision history entries
+    - Placeholder message
 
     Raises:
-    - 403: Not authorized
-    - 404: Transcription not found
+    - 501: Not implemented
     """
-    pass
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Revision history feature is planned for Phase 3",
+    )

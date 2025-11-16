@@ -28,11 +28,14 @@ class Settings(BaseSettings):
     )
 
     # Application
+    PROJECT_NAME: str = "Dictat Medical Dictation Service"
     APP_NAME: str = "Dictat"
     APP_VERSION: str = "0.1.0"
+    ENVIRONMENT: str = Field(default="development", alias="APP_ENV", pattern="^(development|staging|production)$")
     APP_ENV: str = Field(default="development", pattern="^(development|staging|production)$")
     DEBUG: bool = True
     LOG_LEVEL: str = Field(default="INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$")
+    API_V1_PREFIX: str = "/api/v1"
 
     # Server
     HOST: str = "0.0.0.0"
@@ -50,7 +53,12 @@ class Settings(BaseSettings):
     PASSWORD_HASH_ALGORITHM: str = Field(default="argon2", pattern="^(bcrypt|argon2)$")
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"]
+
+    @property
+    def ALLOWED_ORIGINS(self) -> List[str]:
+        """Alias for CORS_ORIGINS for compatibility"""
+        return self.CORS_ORIGINS
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -169,6 +177,7 @@ class Settings(BaseSettings):
     # Testing
     TEST_DATABASE_URL: Optional[str] = None
     TEST_REDIS_URL: Optional[str] = None
+    SKIP_DOCKER_TESTS: bool = False  # Skip tests requiring Docker (DB, Redis, OPA)
 
     # Feature Flags
     FEATURE_WEBSOCKET_ENABLED: bool = True

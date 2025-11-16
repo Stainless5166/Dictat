@@ -8,7 +8,7 @@ TODO Phase 1:
 - Implement error logging with audit trail
 """
 
-from typing import Any
+from typing import Any, Optional
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError

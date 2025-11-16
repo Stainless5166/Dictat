@@ -27,6 +27,12 @@ TEST_DATABASE_URL = (
     settings.TEST_DATABASE_URL or "postgresql+asyncpg://test:test@localhost:5432/dictat_test"
 )
 
+# Skip marker for Docker-dependent tests
+skip_docker = pytest.mark.skipif(
+    settings.SKIP_DOCKER_TESTS,
+    reason="Skipping Docker-dependent tests (SKIP_DOCKER_TESTS=true)"
+)
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -44,9 +50,12 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="function")
+@skip_docker
 async def test_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Create test database session
+
+    Requires Docker (PostgreSQL). Skip with SKIP_DOCKER_TESTS=true
 
     TODO Phase 4:
     - Create async engine for test database
