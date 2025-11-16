@@ -11,11 +11,11 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 1. Project Setup (5 tasks)
 
-- [ ] Initialize UV project and create pyproject.toml
-- [ ] Define all Python dependencies (FastAPI, SQLAlchemy, Alembic, asyncpg, etc.)
-- [ ] Create .env.example with all required environment variables
-- [ ] Set up Pydantic Settings for configuration management
-- [ ] Configure SQLAlchemy with asyncpg for PostgreSQL
+- [x] Initialize UV project and create pyproject.toml
+- [x] Define all Python dependencies (FastAPI, SQLAlchemy, Alembic, asyncpg, etc.)
+- [x] Create .env.example with all required environment variables
+- [x] Set up Pydantic Settings for configuration management
+- [x] Configure SQLAlchemy with asyncpg for PostgreSQL
 
 ---
 
@@ -260,10 +260,10 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 5 / 140 (3.6%)
+**Completed**: 10 / 140 (7.1%)
 
 ### By Category
-- Project Setup: 0/5
+- Project Setup: 5/5
 - Database: 0/6
 - Authentication: 0/6
 - Authorization (OPA): 0/5
