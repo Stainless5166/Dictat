@@ -43,7 +43,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 4. Authorization - Open Policy Agent (5 tasks)
 
-- [ ] Set up Open Policy Agent (OPA) container in Docker Swarm
+- [ ] Set up Open Policy Agent (OPA) container in Docker Compose
 - [ ] Write OPA policies for role-based access (doctor/secretary/admin)
 - [ ] Create OPA client integration in FastAPI
 - [ ] Build authorization dependency using OPA
@@ -51,10 +51,10 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ---
 
-## 5. File Storage - NFS (6 tasks)
+## 5. File Storage - Docker Volumes (8 tasks)
 
-- [ ] Configure NFS mount points in Docker Swarm
-- [ ] Create NFS volume definitions in docker-compose.yml
+- [ ] Configure Docker volume for persistent audio storage
+- [ ] Create volume mount definitions in docker-compose.yml
 - [ ] Implement audio file upload endpoint with streaming
 - [ ] Add audio format validation (mp3, wav, m4a, ogg)
 - [ ] Implement chunked upload for large audio files
@@ -90,7 +90,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ---
 
-## 8. Security & Compliance (8 tasks)
+## 8. Security & Compliance - UK GDPR (11 tasks)
 
 - [ ] Implement audit logging for all sensitive operations
 - [ ] Add audit log query endpoints for compliance
@@ -99,6 +99,9 @@ Comprehensive task list for building the Dictat medical dictation service.
 - [ ] Add CORS middleware configuration
 - [ ] Implement rate limiting middleware
 - [ ] Add security headers (HSTS, CSP, X-Frame-Options)
+- [ ] Implement GDPR Right to Erasure (data deletion) endpoint
+- [ ] Implement GDPR Right to Portability (data export) endpoint
+- [ ] Create data retention policy implementation
 - [ ] Configure Prometheus metrics endpoint
 - [ ] Add custom application metrics (dictations, transcriptions)
 - [ ] Set up structured logging with Loki format
@@ -184,32 +187,47 @@ Comprehensive task list for building the Dictat medical dictation service.
 - [ ] Create Dockerfile for frontend (Nginx serving static files)
 - [ ] Create multi-stage builds for optimization
 - [ ] Write docker-compose.yml for local development
+- [ ] Write docker-compose.prod.yml for production deployment
 
 ---
 
-## 17. Docker Swarm Deployment (17 tasks)
+## 17. Terraform & Digital Ocean Infrastructure (12 tasks)
 
-- [ ] Create Docker Swarm stack file (docker-stack.yml)
+- [ ] Create Terraform configuration directory structure
+- [ ] Define Digital Ocean provider and variables (terraform.tfvars)
+- [ ] Create Droplet resource configuration (4GB RAM minimum)
+- [ ] Configure block storage volume (100GB for Docker volumes)
+- [ ] Set up firewall rules (ports 80, 443, 22)
+- [ ] Configure SSH key provisioning
+- [ ] Create DNS records (if using Digital Ocean DNS)
+- [ ] Add provisioner scripts for Docker installation
+- [ ] Create Terraform outputs (droplet IP, volume ID)
+- [ ] Write Terraform backend configuration (state management)
+- [ ] Document Terraform variable requirements
+- [ ] Create infrastructure teardown procedures
+
+---
+
+## 18. Production Deployment (13 tasks)
+
+- [ ] Create production docker-compose.yml
 - [ ] Configure Traefik as reverse proxy and load balancer
 - [ ] Set up Traefik SSL/TLS certificates (Let's Encrypt)
-- [ ] Configure PostgreSQL service in Swarm
-- [ ] Configure Redis service in Swarm
-- [ ] Configure OPA service in Swarm
-- [ ] Set up Prometheus service in Swarm
-- [ ] Set up Grafana service in Swarm
-- [ ] Set up Loki service in Swarm
+- [ ] Configure PostgreSQL service with persistence
+- [ ] Configure Redis service
+- [ ] Configure OPA service
+- [ ] Set up Prometheus service
+- [ ] Set up Grafana service
+- [ ] Set up Loki service
 - [ ] Configure Promtail for log collection
 - [ ] Create Grafana dashboards for application metrics
-- [ ] Set up Docker secrets for sensitive data
-- [ ] Configure Docker configs for application settings
-- [ ] Create database backup strategy and scripts
+- [ ] Create database backup strategy and scripts (Digital Ocean Spaces)
 - [ ] Implement health checks for all services
-- [ ] Configure service replicas and scaling
-- [ ] Set up rolling updates strategy
+- [ ] Create deployment scripts and documentation
 
 ---
 
-## 18. CI/CD Pipeline (8 tasks)
+## 19. CI/CD Pipeline (8 tasks)
 
 - [ ] Create CI pipeline (GitHub Actions/GitLab CI)
 - [ ] Add linting to CI (ruff/black for Python, ESLint for frontend)
@@ -218,40 +236,41 @@ Comprehensive task list for building the Dictat medical dictation service.
 - [ ] Add security scanning to CI (bandit, safety, npm audit)
 - [ ] Create CD pipeline for Docker image building
 - [ ] Set up container registry (Docker Hub/private registry)
-- [ ] Create deployment scripts for Swarm stack updates
+- [ ] Create deployment automation (SSH deploy to Digital Ocean)
 
 ---
 
-## 19. Documentation (10 tasks)
+## 20. Documentation (10 tasks)
 
-- [ ] Write comprehensive README.md
+- [x] Write comprehensive README.md
 - [ ] Document API endpoints (OpenAPI/Swagger)
 - [ ] Create deployment documentation
 - [ ] Write developer setup guide
 - [ ] Create user manual for doctors
 - [ ] Create user manual for secretaries
 - [ ] Document OPA policies and authorization rules
-- [ ] Create architecture diagram
+- [x] Create architecture diagrams (Mermaid)
 - [ ] Document monitoring and alerting setup
 - [ ] Create disaster recovery documentation
+- [ ] Create GDPR compliance documentation
 
 ---
 
 ## Progress Summary
 
-**Total Tasks**: 135
+**Total Tasks**: 139
 
-**Completed**: 0 / 135 (0%)
+**Completed**: 2 / 139 (1.4%)
 
 ### By Category
 - Project Setup: 0/5
 - Database: 0/6
 - Authentication: 0/6
 - Authorization (OPA): 0/5
-- File Storage (NFS): 0/8
+- File Storage (Docker Volumes): 0/8
 - Core API: 0/11
 - Background Tasks: 0/5
-- Security & Compliance: 0/11
+- Security & Compliance (GDPR): 0/14
 - Frontend Setup: 0/5
 - Frontend Auth: 0/3
 - Frontend Doctor: 0/4
@@ -259,10 +278,11 @@ Comprehensive task list for building the Dictat medical dictation service.
 - Frontend Shared: 0/4
 - Backend Testing: 0/10
 - Frontend Testing: 0/2
-- Docker: 0/4
-- Swarm Deployment: 0/17
+- Docker: 0/5
+- Terraform & Infrastructure: 0/12
+- Production Deployment: 0/13
 - CI/CD: 0/8
-- Documentation: 0/10
+- Documentation: 2/11
 
 ---
 
@@ -276,7 +296,7 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ### Phase 2: Core Backend (Weeks 3-4)
 - Authorization (OPA)
-- File Storage (NFS)
+- File Storage (Docker Volumes)
 - Core API endpoints
 - Background tasks
 
@@ -290,30 +310,44 @@ Comprehensive task list for building the Dictat medical dictation service.
 - Backend tests
 - Frontend tests
 - Security hardening
-- Compliance features
+- GDPR compliance features
 
-### Phase 5: Deployment (Week 8)
-- Docker Swarm setup
+### Phase 5: Infrastructure & Deployment (Week 8)
+- Terraform infrastructure setup
+- Digital Ocean deployment
 - CI/CD pipeline
 - Monitoring & logging
-- Documentation
 
 ### Phase 6: Polish & Launch (Week 9-10)
 - Bug fixes
 - Performance optimization
 - User testing
 - Production deployment
+- Final documentation
 
 ---
 
 ## Notes
 
-- Prioritize HIPAA compliance throughout development
+- **Prioritize UK GDPR compliance** throughout development (Isle of Man data protection)
 - Implement audit logging early for all sensitive operations
 - Test OPA policies thoroughly - authorization is critical
-- Ensure NFS streaming works properly before building frontend audio components
+- Ensure Docker volume streaming works properly before building frontend audio components
 - Set up monitoring and alerting before production deployment
 - Consider disaster recovery and backup strategies from the start
+- **Digital Ocean costs**: Plan for ~$40-50/month (4GB droplet + 100GB storage + backups)
+- **Data retention**: Medical records typically retained for 7 years
+- **Terraform state**: Store in Digital Ocean Spaces or S3 for team collaboration
+
+---
+
+## Cost Optimization Tips
+
+- Start with 4GB droplet, scale to 8GB if >50 concurrent users
+- Use Digital Ocean Spaces for database backups ($5/250GB)
+- Enable automated backups only if needed ($4.80/month)
+- Consider reserved instances for 15% discount (annual commitment)
+- Monitor bandwidth usage (1TB included, $0.01/GB after)
 
 ---
 

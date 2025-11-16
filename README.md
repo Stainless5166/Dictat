@@ -37,10 +37,11 @@ Dictat provides a complete workflow for medical dictation management:
 - **MediaRecorder API** - Browser-based audio recording
 
 ### Infrastructure
-- **Docker** - Containerization
-- **Docker Swarm** - Container orchestration
+- **Docker & Docker Compose** - Containerization and orchestration
 - **Traefik** - Reverse proxy, load balancer, SSL termination
-- **NFS** - Network file storage for audio files (streaming only, no local caching)
+- **Terraform** - Infrastructure as Code for Digital Ocean provisioning
+- **Digital Ocean Droplet** - Single-server deployment
+- **Docker Volumes** - Persistent storage for audio files and database
 - **Prometheus** - Metrics collection
 - **Grafana** - Metrics visualization and dashboards
 - **Loki** - Log aggregation
@@ -54,59 +55,110 @@ Dictat provides a complete workflow for medical dictation management:
 - **black** - Code formatter
 - **mypy** - Static type checker
 - **ESLint** - JavaScript/TypeScript linter
+- **pre-commit** - Git hooks for code quality
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Traefik (SSL/Load Balancer)               │
-└────────────┬──────────────────────────┬─────────────────────┘
-             │                          │
-    ┌────────▼────────┐        ┌────────▼────────┐
-    │  Frontend       │        │  FastAPI        │
-    │  (Nginx/Svelte) │◄──────►│  Backend        │
-    └─────────────────┘        └───┬────┬────┬───┘
-                                   │    │    │
-                    ┌──────────────┘    │    └──────────┐
-                    │                   │               │
-            ┌───────▼────────┐   ┌──────▼──────┐  ┌────▼─────┐
-            │  PostgreSQL    │   │   Redis     │  │   OPA    │
-            │  (Database)    │   │   (Cache)   │  │ (AuthZ)  │
-            └────────────────┘   └─────────────┘  └──────────┘
-                    │
-            ┌───────▼────────┐
-            │  NFS Storage   │
-            │  (Audio Files) │
-            └────────────────┘
+```mermaid
+graph TB
+    Internet[Internet] --> Traefik[Traefik<br/>Reverse Proxy & SSL]
 
-         Monitoring & Logging:
-    ┌──────────────────────────────┐
-    │ Prometheus → Grafana         │
-    │ Loki ← Promtail              │
-    └──────────────────────────────┘
+    Traefik --> Frontend[Frontend<br/>Nginx + Svelte/React]
+    Traefik --> Backend[FastAPI Backend<br/>Python 3.11]
+
+    Frontend -.API Calls.-> Backend
+
+    Backend --> PostgreSQL[(PostgreSQL<br/>Database)]
+    Backend --> Redis[(Redis<br/>Cache & Queue)]
+    Backend --> OPA[OPA<br/>Authorization]
+    Backend --> Storage[Docker Volume<br/>Audio Files]
+
+    Backend --> Prometheus[Prometheus<br/>Metrics]
+    Prometheus --> Grafana[Grafana<br/>Dashboards]
+
+    Backend --> Loki[Loki<br/>Log Aggregation]
+    Promtail[Promtail] --> Loki
+
+    subgraph "Digital Ocean Droplet"
+        Traefik
+        Frontend
+        Backend
+        PostgreSQL
+        Redis
+        OPA
+        Storage
+        Prometheus
+        Grafana
+        Loki
+        Promtail
+    end
+
+    style Traefik fill:#00d4ff
+    style Backend fill:#009688
+    style Frontend fill:#4caf50
+    style PostgreSQL fill:#336791
+    style Redis fill:#dc382d
 ```
 
 ### Key Architecture Decisions
 
-1. **Streaming-Only File Access** - Audio files are streamed directly from NFS, never cached locally
-2. **Docker Swarm** - Self-hosted orchestration for high availability and scaling
-3. **Policy-Based Authorization** - OPA handles complex role-based access control
-4. **Async Architecture** - FastAPI with async/await for high concurrency
-5. **Monitoring-First** - Prometheus/Grafana/Loki integrated from the start
-6. **Security-Focused** - HIPAA-compliant audit logging, encryption, JWT authentication
+1. **Streaming-Only File Access** - Audio files are streamed from Docker volumes, never cached in memory
+2. **Single-Server Deployment** - Docker Compose on Digital Ocean for simplicity and cost-effectiveness
+3. **Infrastructure as Code** - Terraform manages all cloud resources
+4. **Policy-Based Authorization** - OPA handles complex role-based access control
+5. **Async Architecture** - FastAPI with async/await for high concurrency
+6. **Monitoring-First** - Prometheus/Grafana/Loki integrated from the start
+7. **Security-Focused** - UK GDPR compliant audit logging, encryption, JWT authentication
 
 ## Data Model
 
-### Core Entities
+```mermaid
+erDiagram
+    User ||--o{ Dictation : creates
+    User ||--o{ Transcription : transcribes
+    User ||--o{ AuditLog : generates
+    Dictation ||--|| Transcription : has
 
-- **User** - Doctors, secretaries, and administrators
-  - id, email, hashed_password, role, is_active, created_at
-- **Dictation** - Audio recording metadata
-  - id, user_id, file_path, duration, status, created_at, assigned_to
-- **Transcription** - Markdown transcriptions linked to dictations
-  - id, dictation_id, content, status, created_by, reviewed_by, version
-- **AuditLog** - Compliance and security audit trail
-  - id, user_id, action, resource_type, resource_id, timestamp, metadata
+    User {
+        uuid id PK
+        string email UK
+        string hashed_password
+        enum role
+        boolean is_active
+        timestamp created_at
+    }
+
+    Dictation {
+        uuid id PK
+        uuid user_id FK
+        string file_path
+        int duration
+        enum status
+        timestamp created_at
+        uuid assigned_to FK
+    }
+
+    Transcription {
+        uuid id PK
+        uuid dictation_id FK
+        text content
+        enum status
+        uuid created_by FK
+        uuid reviewed_by FK
+        int version
+        timestamp updated_at
+    }
+
+    AuditLog {
+        uuid id PK
+        uuid user_id FK
+        string action
+        string resource_type
+        uuid resource_id
+        timestamp timestamp
+        json metadata
+    }
+```
 
 ### Workflow States
 
@@ -229,30 +281,87 @@ pnpm test:e2e
 
 ## Production Deployment
 
-### Docker Swarm Setup
+### Digital Ocean Deployment with Terraform
 
-1. **Initialize Swarm (on manager node)**
+#### Prerequisites
+
+- Digital Ocean account
+- Digital Ocean API token
+- Terraform installed locally
+- Domain name configured
+
+#### Infrastructure Setup
+
+1. **Configure Terraform variables**
    ```bash
-   docker swarm init
+   cd terraform
+   cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your settings
    ```
 
-2. **Configure NFS mount**
-   - Mount NFS share on all nodes at `/mnt/dictat-storage`
-
-3. **Set up secrets**
+2. **Initialize and apply Terraform**
    ```bash
-   echo "your-secret-key" | docker secret create jwt_secret -
-   echo "db-password" | docker secret create db_password -
+   terraform init
+   terraform plan
+   terraform apply
    ```
 
-4. **Deploy the stack**
+   This will provision:
+   - Digital Ocean Droplet (recommended: 4GB RAM minimum)
+   - Block storage volume for Docker volumes
+   - Firewall rules (ports 80, 443, 22)
+   - SSH key configuration
+   - DNS records (if using Digital Ocean DNS)
+
+3. **Deploy application**
    ```bash
-   docker stack deploy -c docker-stack.yml dictat
+   # SSH into the droplet
+   ssh root@your-droplet-ip
+
+   # Clone repository
+   git clone <repository-url>
+   cd Dictat
+
+   # Set up environment
+   cp .env.example .env
+   # Edit .env with production settings
+
+   # Deploy with Docker Compose
+   docker-compose -f docker-compose.prod.yml up -d
    ```
 
-5. **Access Grafana**
-   - URL: https://monitoring.yourdomain.com
-   - Set up dashboards for application metrics
+#### Deployment Architecture
+
+```mermaid
+flowchart LR
+    subgraph DO[Digital Ocean]
+        subgraph Droplet[Droplet - 4GB RAM]
+            Traefik[Traefik :80/:443]
+
+            subgraph Services[Docker Containers]
+                Frontend[Frontend]
+                Backend[Backend]
+                DB[(PostgreSQL)]
+                Cache[(Redis)]
+                OPA[OPA]
+                Prom[Prometheus]
+                Graf[Grafana]
+                Loki[Loki]
+            end
+
+            Traefik --> Frontend
+            Traefik --> Backend
+            Traefik --> Graf
+        end
+
+        Volume[(Block Storage<br/>100GB)]
+        Volume -.-> DB
+        Volume -.-> Services
+    end
+
+    Internet((Internet)) --> Traefik
+    DNS[DNS Records] -.-> Traefik
+```
 
 ### Environment Variables
 
@@ -261,30 +370,97 @@ Key environment variables (see `.env.example` for complete list):
 - `DATABASE_URL` - PostgreSQL connection string
 - `REDIS_URL` - Redis connection string
 - `JWT_SECRET_KEY` - Secret for JWT token signing
-- `NFS_MOUNT_PATH` - Path to NFS storage
+- `STORAGE_PATH` - Path to Docker volume for audio files
 - `OPA_URL` - Open Policy Agent endpoint
-- `PROMETHEUS_URL` - Prometheus endpoint
-- `LOKI_URL` - Loki endpoint
+- `DOMAIN` - Your domain name for SSL certificates
+- `DO_API_TOKEN` - Digital Ocean API token (Terraform)
+
+### SSL/TLS Certificates
+
+Traefik automatically provisions and renews Let's Encrypt SSL certificates:
+
+```yaml
+# docker-compose.prod.yml excerpt
+traefik:
+  command:
+    - --certificatesresolvers.letsencrypt.acme.email=your-email@example.com
+    - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+```
+
+### Backups
+
+Automated backup strategy:
+
+1. **Database backups** - Daily PostgreSQL dumps to Digital Ocean Spaces
+2. **Volume backups** - Daily snapshots of block storage
+3. **Configuration backups** - Git repository for infrastructure as code
+
+```bash
+# Manual backup
+docker exec dictat-postgres pg_dump -U postgres dictat > backup.sql
+
+# Restore
+docker exec -i dictat-postgres psql -U postgres dictat < backup.sql
+```
 
 ## Security & Compliance
 
-### HIPAA Considerations
+### UK GDPR & Data Protection (Isle of Man)
 
-- **Audit Logging** - All data access and modifications are logged
-- **Encryption at Rest** - PostgreSQL encryption, encrypted NFS volumes
-- **Encryption in Transit** - TLS/SSL via Traefik with Let's Encrypt
+The Isle of Man has its own data protection legislation aligned with UK GDPR. Dictat implements:
+
+**Data Protection Principles:**
+- **Lawfulness, Fairness, Transparency** - Clear privacy policy and consent mechanisms
+- **Purpose Limitation** - Data collected only for medical dictation purposes
+- **Data Minimization** - Only essential information is collected
+- **Accuracy** - Mechanisms for users to update their information
+- **Storage Limitation** - Configurable data retention policies
+- **Integrity & Confidentiality** - Encryption and access controls
+- **Accountability** - Comprehensive audit logging
+
+**Technical Measures:**
+- **Audit Logging** - All data access and modifications are logged with immutable audit trail
+- **Encryption at Rest** - PostgreSQL encryption and encrypted Docker volumes
+- **Encryption in Transit** - TLS/SSL via Traefik with Let's Encrypt certificates
 - **Access Control** - Role-based access via OPA policies
-- **Data Retention** - Configurable retention policies
+- **Data Retention** - Configurable retention policies with automated deletion
 - **Session Management** - Secure JWT tokens with refresh mechanism
+- **Right to Erasure** - API endpoints for user data deletion (GDPR Article 17)
+- **Data Portability** - Export functionality for user data (GDPR Article 20)
+
+**Compliance Features:**
+- Data Processing Agreement templates
+- Privacy Impact Assessment documentation
+- Breach notification procedures
+- Subject Access Request (SAR) handling
 
 ### Authentication Flow
 
-1. User submits credentials to `/auth/login`
-2. Backend validates credentials and generates JWT access + refresh tokens
-3. Frontend stores tokens securely (httpOnly cookies or memory)
-4. Requests include JWT in Authorization header
-5. Backend validates JWT and checks OPA for authorization
-6. Refresh tokens used to obtain new access tokens
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant OPA
+    participant DB
+
+    User->>Frontend: Enter credentials
+    Frontend->>Backend: POST /auth/login
+    Backend->>DB: Verify credentials
+    DB-->>Backend: User data
+    Backend->>Backend: Generate JWT tokens
+    Backend-->>Frontend: Access + Refresh tokens
+    Frontend->>Frontend: Store tokens securely
+
+    User->>Frontend: Access protected resource
+    Frontend->>Backend: Request + JWT header
+    Backend->>Backend: Validate JWT
+    Backend->>OPA: Check authorization
+    OPA-->>Backend: Allow/Deny
+    Backend->>DB: Fetch data (if allowed)
+    DB-->>Backend: Resource data
+    Backend-->>Frontend: Response
+```
 
 ### Authorization (OPA)
 
@@ -293,32 +469,39 @@ Policies are defined in Rego and enforce:
 - Resource ownership (users can only access their own dictations)
 - State transitions (only secretaries can mark as in_progress)
 - Administrative actions (only admins can manage users)
+- Data segregation (secretaries cannot access other secretaries' work)
 
 ## Monitoring & Observability
 
 ### Metrics (Prometheus + Grafana)
 
+Access Grafana at `https://monitoring.yourdomain.com`
+
+**Dashboards:**
 - Request rate, latency, error rate (RED metrics)
 - Custom metrics: dictations uploaded, transcriptions completed
 - Database connection pool statistics
-- NFS I/O performance
+- Disk I/O and storage usage
 - Service health checks
+- Container resource usage (CPU, memory)
 
 ### Logs (Loki + Promtail)
 
 - Structured JSON logging
 - Centralized log aggregation
 - Query logs by service, level, user, or request ID
-- Audit log retention for compliance
+- Audit log retention for compliance (7 years recommended for medical records)
 
 ### Alerting
 
 Configure Grafana alerts for:
 - Service downtime
-- High error rates
+- High error rates (>1%)
 - Database connection failures
-- Disk space on NFS volumes
+- Disk space warnings (<20% free)
 - Unusual access patterns
+- Failed authentication attempts (>10/minute)
+- SSL certificate expiration (30 days warning)
 
 ## API Documentation
 
@@ -337,6 +520,8 @@ Key endpoints:
 - `POST /transcriptions` - Submit transcription
 - `PUT /transcriptions/{id}` - Update transcription
 - `POST /dictations/{id}/review` - Review and approve
+- `GET /user/data-export` - Export user data (GDPR)
+- `DELETE /user/account` - Delete user account (Right to Erasure)
 
 ## Contributing
 
@@ -380,3 +565,14 @@ See [TODO.md](TODO.md) for detailed development tasks and project roadmap.
 ## Testing
 
 See [Test_Targets.md](Test_Targets.md) for comprehensive testing strategy and targets.
+
+## Infrastructure Cost Estimate
+
+**Digital Ocean Monthly Costs (estimated):**
+- Droplet (4GB RAM, 2 vCPU): $24/month
+- Block Storage (100GB): $10/month
+- Bandwidth (1TB included): $0/month (typical usage)
+- Backups (optional): $4.80/month (20% of droplet cost)
+- **Total: ~$39-44/month**
+
+Scale up to 8GB RAM droplet ($48/month) if handling >50 concurrent users.
