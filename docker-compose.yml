@@ -1,0 +1,151 @@
+# Docker Compose for local development
+# TODO Phase 5: Add production-ready configurations
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dictat_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-dictat_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dictat_password}
+      POSTGRES_DB: ${DB_NAME:-dictat_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dictat_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dictat_network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: dictat_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dictat_network
+
+  # Open Policy Agent (OPA)
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: dictat_opa
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "/policies"
+    volumes:
+      - ./opa/policies:/policies
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dictat_network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dictat_backend
+    environment:
+      - APP_ENV=development
+      - DEBUG=True
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-dictat_user}:${DB_PASSWORD:-dictat_password}@postgres:5432/${DB_NAME:-dictat_db}
+      - REDIS_URL=redis://redis:6379/0
+      - OPA_URL=http://opa:8181
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./app:/app/app:ro
+      - audio_storage:/app/storage/audio
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - dictat_network
+
+  # TODO Phase 5: Add frontend service
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: dictat_frontend
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - dictat_network
+
+  # TODO Phase 5: Add Prometheus for metrics
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: dictat_prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   networks:
+  #     - dictat_network
+
+  # TODO Phase 5: Add Grafana for visualization
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: dictat_grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - dictat_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  audio_storage:
+    driver: local
+  # prometheus_data:
+  #   driver: local
+  # grafana_data:
+  #   driver: local
+
+networks:
+  dictat_network:
+    driver: bridge

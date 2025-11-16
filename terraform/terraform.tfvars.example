@@ -1,0 +1,36 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+
+# Digital Ocean API Token (required)
+do_token = "your-digital-ocean-api-token-here"
+
+# Project Configuration
+project_name = "dictat"
+environment  = "production"
+
+# Regional Configuration (London datacenter, closest to Isle of Man)
+region = "lon1"
+
+# Droplet Configuration
+droplet_size  = "s-2vcpu-4gb"  # 4GB RAM, 2 vCPUs, 80GB SSD
+droplet_image = "ubuntu-22-04-x64"
+
+# Storage Configuration
+volume_size = 100  # GB for audio files and database
+
+# SSH Configuration
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+allowed_ssh_ips     = ["0.0.0.0/0"]  # TODO: Restrict to specific IPs in production
+
+# Domain Configuration (optional)
+domain_name = "dictat.example.com"
+
+# Features
+enable_monitoring = true
+enable_backups    = true
+
+# Database (if using managed database)
+database_size = "db-s-1vcpu-1gb"
+
+# Tags
+tags = ["dictat", "medical", "gdpr-compliant", "isle-of-man"]
