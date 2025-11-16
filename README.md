@@ -170,6 +170,46 @@ Dictat provides a complete workflow for medical dictation management:
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
 
+### Code Quality & Git Hooks
+
+We use pre-commit hooks to ensure code quality and consistency. Install them once:
+
+```bash
+# Install pre-commit hooks
+./scripts/setup-hooks.sh
+```
+
+This will set up automatic checks that run before each commit:
+
+**Python:**
+- **Black** - Code formatting (100 char line length)
+- **Ruff** - Fast linting and import sorting
+- **mypy** - Static type checking
+- **Bandit** - Security vulnerability scanning
+
+**General:**
+- **Hadolint** - Dockerfile linting
+- **ShellCheck** - Shell script linting
+- **Markdownlint** - Markdown formatting
+- **YAML/JSON validators** - Configuration file validation
+
+**Frontend (when available):**
+- **ESLint** - JavaScript/TypeScript linting
+- **Prettier** - Code formatting
+- **TypeScript** - Type checking
+
+**Manual commands:**
+```bash
+# Run all hooks manually
+pre-commit run --all-files
+
+# Update hook versions
+pre-commit autoupdate
+
+# Bypass hooks (not recommended)
+git commit --no-verify
+```
+
 ### Running Tests
 
 ```bash
@@ -301,23 +341,26 @@ Key endpoints:
 ## Contributing
 
 1. Create a feature branch from `main`
-2. Make your changes
-3. Run tests and linting
-4. Submit a pull request
+2. Set up git hooks (if not already done): `./scripts/setup-hooks.sh`
+3. Make your changes
+4. Git hooks will automatically run on commit (formatting, linting, type checking)
+5. Run tests: `uv run pytest`
+6. Submit a pull request
 
 ### Code Quality
 
+Pre-commit hooks will automatically run these checks, but you can also run them manually:
+
 ```bash
-# Format code
-uv run black .
-uv run ruff check --fix .
+# All hooks
+pre-commit run --all-files
 
-# Type checking
-uv run mypy .
-
-# Security scanning
-uv run bandit -r .
-uv run safety check
+# Individual tools
+uv run black .              # Format code
+uv run ruff check --fix .   # Lint and fix
+uv run mypy .               # Type checking
+uv run bandit -r .          # Security scanning
+uv run safety check         # Dependency vulnerabilities
 ```
 
 ## License
