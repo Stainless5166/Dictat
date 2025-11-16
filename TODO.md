@@ -32,12 +32,12 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 3. Authentication (6 tasks)
 
-- [ ] Implement JWT token generation and validation
-- [ ] Create password hashing utilities (bcrypt/argon2)
-- [ ] Build user registration endpoint with validation
-- [ ] Build login endpoint returning JWT tokens
-- [ ] Create JWT dependency for protected routes
-- [ ] Implement refresh token mechanism
+- [x] Implement JWT token generation and validation
+- [x] Create password hashing utilities (bcrypt/argon2)
+- [x] Build user registration endpoint with validation
+- [x] Build login endpoint returning JWT tokens
+- [x] Create JWT dependency for protected routes
+- [x] Implement refresh token mechanism
 
 ---
 
@@ -260,12 +260,12 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 16 / 140 (11.4%)
+**Completed**: 22 / 140 (15.7%)
 
 ### By Category
 - Project Setup: 5/5
 - Database: 6/6
-- Authentication: 0/6
+- Authentication: 6/6
 - Authorization (OPA): 0/5
 - File Storage (Docker Volumes): 0/8
 - Core API: 0/11
