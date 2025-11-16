@@ -106,7 +106,7 @@ class AuditLog(Base):
 
     # Details
     description = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)  # Additional context as JSON
+    extra_data = Column(JSON, nullable=True)  # Additional context as JSON (renamed from metadata to avoid SQLAlchemy conflict)
 
     # TODO Phase 3: Add integrity verification
     # previous_log_hash = Column(String(64), nullable=True)  # Hash of previous log entry

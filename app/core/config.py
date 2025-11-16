@@ -40,7 +40,10 @@ class Settings(BaseSettings):
     RELOAD: bool = True
 
     # Security
-    SECRET_KEY: str = Field(min_length=32)
+    SECRET_KEY: str = Field(
+        default="dev-secret-key-change-in-production-min-32-chars!!!",
+        min_length=32
+    )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, ge=1)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, ge=1)
@@ -60,9 +63,9 @@ class Settings(BaseSettings):
     # Database
     DB_HOST: str = "localhost"
     DB_PORT: int = Field(default=5432, ge=1, le=65535)
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
+    DB_USER: str = "dictat_user"
+    DB_PASSWORD: str = "changeme"
+    DB_NAME: str = "dictat_db"
     DB_ECHO: bool = False
     DB_POOL_SIZE: int = Field(default=20, ge=1)
     DB_MAX_OVERFLOW: int = Field(default=10, ge=0)
@@ -116,11 +119,11 @@ class Settings(BaseSettings):
         return v
 
     # Email
-    MAIL_USERNAME: EmailStr
-    MAIL_PASSWORD: str
-    MAIL_FROM: EmailStr
+    MAIL_USERNAME: Optional[EmailStr] = None
+    MAIL_PASSWORD: Optional[str] = None
+    MAIL_FROM: Optional[EmailStr] = None
     MAIL_PORT: int = Field(default=587, ge=1, le=65535)
-    MAIL_SERVER: str
+    MAIL_SERVER: Optional[str] = None
     MAIL_TLS: bool = True
     MAIL_SSL: bool = False
     MAIL_USE_CREDENTIALS: bool = True
@@ -148,8 +151,8 @@ class Settings(BaseSettings):
     AUDIT_LOG_RETENTION_DAYS: int = Field(default=3650, ge=1)  # 10 years
     ENABLE_ENCRYPTION_AT_REST: bool = True
     ENABLE_FIELD_LEVEL_ENCRYPTION: bool = True
-    DPO_EMAIL: EmailStr
-    DPO_NAME: str
+    DPO_EMAIL: Optional[EmailStr] = None
+    DPO_NAME: Optional[str] = None
 
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True

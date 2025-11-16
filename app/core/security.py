@@ -137,7 +137,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     - Log failed verification attempts
     - Add timing attack protection
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        # Invalid hash format or other errors should return False
+        return False
 
 
 def generate_secure_token(length: int = 32) -> str:
