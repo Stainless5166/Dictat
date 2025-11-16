@@ -21,12 +21,12 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 2. Database Setup (6 tasks)
 
-- [ ] Design database schema (User, Role, Dictation, Transcription, AuditLog tables)
-- [ ] Create SQLAlchemy models with proper relationships
-- [ ] Set up Alembic for database migrations
-- [ ] Create initial migration for all database tables
-- [ ] Add database indexes for performance optimization
-- [ ] Create database seed script for development data
+- [x] Design database schema (User, Role, Dictation, Transcription, AuditLog tables)
+- [x] Create SQLAlchemy models with proper relationships
+- [x] Set up Alembic for database migrations
+- [x] Create initial migration for all database tables
+- [x] Add database indexes for performance optimization
+- [x] Create database seed script for development data
 
 ---
 
@@ -260,11 +260,11 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 10 / 140 (7.1%)
+**Completed**: 16 / 140 (11.4%)
 
 ### By Category
 - Project Setup: 5/5
-- Database: 0/6
+- Database: 6/6
 - Authentication: 0/6
 - Authorization (OPA): 0/5
 - File Storage (Docker Volumes): 0/8
