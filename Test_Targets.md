@@ -8,7 +8,7 @@ Comprehensive testing plan for ensuring quality, security, and compliance.
 - **Minimum 80% code coverage** for backend
 - **Minimum 70% code coverage** for frontend
 - **Security-first testing** - all auth/authz paths must be tested
-- **HIPAA compliance verification** through audit log testing
+- **UK GDPR compliance verification** through audit log testing (Isle of Man data protection)
 - **Performance testing** for file streaming and database queries
 
 ---
@@ -211,6 +211,33 @@ Comprehensive testing plan for ensuring quality, security, and compliance.
 - [ ] `DELETE /users/{id}`
   - Deactivate user (soft delete)
   - Admin only
+
+#### GDPR Compliance Endpoints (`tests/api/test_gdpr.py`)
+
+**Target Coverage**: 100% (compliance critical)
+
+- [ ] `GET /user/data-export` (Right to Portability - GDPR Article 20)
+  - Export all user data in machine-readable format
+  - Include dictations, transcriptions, audit logs
+  - JSON format with proper structure
+  - Authentication required
+  - Only own data accessible
+
+- [ ] `DELETE /user/account` (Right to Erasure - GDPR Article 17)
+  - Delete all user data
+  - Cascade delete dictations and transcriptions
+  - Anonymize audit logs (retain structure, remove PII)
+  - Cannot delete if active transcriptions assigned
+  - Confirmation required
+  - Audit trail of deletion
+
+- [ ] `GET /user/consent`
+  - Retrieve current consent settings
+  - Data processing purposes listed
+
+- [ ] `PUT /user/consent`
+  - Update consent preferences
+  - Audit consent changes
 
 #### Audit Log Endpoints (`tests/api/test_audit.py`)
 
@@ -538,7 +565,7 @@ Comprehensive testing plan for ensuring quality, security, and compliance.
 
 - [ ] Factory functions for models
 - [ ] Faker integration for realistic data
-- [ ] HIPAA-compliant test data (no real PHI)
+- [ ] GDPR-compliant test data (no real personal/medical data)
 - [ ] Seed scripts for development database
 
 ---
