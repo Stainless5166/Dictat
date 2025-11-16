@@ -18,9 +18,17 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 
-# Password hashing context
-# TODO: Configure based on settings.PASSWORD_HASH_ALGORITHM
-pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
+# Password hashing context configured from settings
+# Uses the algorithm specified in settings.PASSWORD_HASH_ALGORITHM (argon2 or bcrypt)
+# Both algorithms are supported for backwards compatibility (can verify old hashes)
+# but new hashes will use the configured algorithm (first in list)
+_schemes = [settings.PASSWORD_HASH_ALGORITHM]
+if settings.PASSWORD_HASH_ALGORITHM != "bcrypt":
+    _schemes.append("bcrypt")
+if settings.PASSWORD_HASH_ALGORITHM != "argon2":
+    _schemes.append("argon2")
+
+pwd_context = CryptContext(schemes=_schemes, deprecated="auto")
 
 
 def create_access_token(data: dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
