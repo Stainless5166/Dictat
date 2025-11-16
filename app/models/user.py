@@ -97,7 +97,7 @@ class User(Base):
     # audit_logs = relationship("AuditLog", back_populates="user")
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
+        return f"<User(id={self.id}, email='{self.email}', role='{self.role.value}')>"
 
     # TODO Phase 1: Add property methods
     # @property
