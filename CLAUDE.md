@@ -334,6 +334,626 @@ async def create_user(user_data: dict, db: AsyncSession = Depends(get_db)):
     return user
 ```
 
+### 10. Test-Driven Development (TDD)
+
+**CRITICAL**: Follow TDD practices for all new features and bug fixes
+
+#### TDD Cycle: Red-Green-Refactor
+
+```
+1. RED:    Write a failing test first
+2. GREEN:  Write minimal code to pass the test
+3. REFACTOR: Improve code while keeping tests green
+4. COMMIT: Commit working code with tests
+5. DOCUMENT: Update docs when feature is complete
+```
+
+#### When to Use TDD
+
+**ALWAYS use TDD for**:
+- ✅ New features (API endpoints, models, services)
+- ✅ Bug fixes (write test that reproduces bug first)
+- ✅ Security-critical code (authentication, authorization, GDPR)
+- ✅ Complex business logic
+- ✅ Public APIs and utilities
+
+**TDD is OPTIONAL for**:
+- 🟡 Simple data models with no logic
+- 🟡 Configuration files
+- 🟡 Documentation-only changes
+
+#### TDD Workflow
+
+**Step 1: Write the Test First (RED)**
+
+```python
+# tests/unit/test_dictation_service.py
+import pytest
+from app.services.dictation import create_dictation
+from app.models.user import UserRole
+
+@pytest.mark.asyncio
+async def test_create_dictation_success(test_db, test_doctor):
+    """Test creating a dictation as a doctor"""
+    # Arrange
+    dictation_data = {
+        "title": "Patient Visit Notes",
+        "audio_file": "recording.mp3",
+        "duration": 120,
+    }
+
+    # Act
+    dictation = await create_dictation(
+        db=test_db,
+        user=test_doctor,
+        data=dictation_data
+    )
+
+    # Assert
+    assert dictation.id is not None
+    assert dictation.title == "Patient Visit Notes"
+    assert dictation.doctor_id == test_doctor.id
+    assert dictation.status == "pending"
+```
+
+**Run the test - it should FAIL**:
+```bash
+uv run pytest tests/unit/test_dictation_service.py::test_create_dictation_success -v
+# Expected: FAILED (function doesn't exist yet)
+```
+
+**Commit the failing test**:
+```bash
+git add tests/unit/test_dictation_service.py
+git commit -m "test: add failing test for dictation creation
+
+RED phase of TDD - test currently fails as create_dictation
+service function has not been implemented yet."
+```
+
+**Step 2: Write Minimal Code (GREEN)**
+
+```python
+# app/services/dictation.py
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.dictation import Dictation
+from app.models.user import User
+
+async def create_dictation(
+    db: AsyncSession,
+    user: User,
+    data: dict
+) -> Dictation:
+    """
+    Create a new dictation
+
+    Args:
+        db: Database session
+        user: User creating the dictation (must be doctor)
+        data: Dictation data (title, audio_file, duration)
+
+    Returns:
+        Created Dictation object
+    """
+    dictation = Dictation(
+        title=data["title"],
+        audio_file=data["audio_file"],
+        duration=data["duration"],
+        doctor_id=user.id,
+        status="pending",
+    )
+
+    db.add(dictation)
+    await db.commit()
+    await db.refresh(dictation)
+
+    return dictation
+```
+
+**Run the test - it should PASS**:
+```bash
+uv run pytest tests/unit/test_dictation_service.py::test_create_dictation_success -v
+# Expected: PASSED
+```
+
+**Commit the passing implementation**:
+```bash
+git add app/services/dictation.py
+git commit -m "feat: implement create_dictation service function
+
+GREEN phase of TDD - minimal implementation to pass test.
+Creates dictation with pending status and associates with doctor."
+```
+
+**Step 3: Add Edge Cases and Error Handling**
+
+Write more tests for edge cases:
+```python
+@pytest.mark.asyncio
+async def test_create_dictation_secretary_forbidden(test_db, test_secretary):
+    """Test that secretaries cannot create dictations"""
+    dictation_data = {
+        "title": "Test",
+        "audio_file": "test.mp3",
+        "duration": 60,
+    }
+
+    with pytest.raises(PermissionError):
+        await create_dictation(
+            db=test_db,
+            user=test_secretary,  # Secretary, not doctor
+            data=dictation_data
+        )
+
+@pytest.mark.asyncio
+async def test_create_dictation_missing_title(test_db, test_doctor):
+    """Test validation for missing title"""
+    dictation_data = {
+        "audio_file": "test.mp3",
+        "duration": 60,
+    }
+
+    with pytest.raises(ValueError, match="Title is required"):
+        await create_dictation(
+            db=test_db,
+            user=test_doctor,
+            data=dictation_data
+        )
+```
+
+**Run tests - they should FAIL**:
+```bash
+uv run pytest tests/unit/test_dictation_service.py -v
+# Expected: 1 passed, 2 failed
+```
+
+**Commit the new failing tests**:
+```bash
+git add tests/unit/test_dictation_service.py
+git commit -m "test: add edge case tests for dictation creation
+
+RED phase - tests for:
+- Permission check (only doctors can create)
+- Validation (title is required)
+
+Both tests currently fail."
+```
+
+**Step 4: Implement Edge Cases (GREEN)**
+
+```python
+# app/services/dictation.py
+from app.models.user import UserRole
+
+async def create_dictation(
+    db: AsyncSession,
+    user: User,
+    data: dict
+) -> Dictation:
+    """Create a new dictation"""
+
+    # Validation
+    if user.role != UserRole.DOCTOR:
+        raise PermissionError("Only doctors can create dictations")
+
+    if "title" not in data or not data["title"]:
+        raise ValueError("Title is required")
+
+    dictation = Dictation(
+        title=data["title"],
+        audio_file=data["audio_file"],
+        duration=data["duration"],
+        doctor_id=user.id,
+        status="pending",
+    )
+
+    db.add(dictation)
+    await db.commit()
+    await db.refresh(dictation)
+
+    return dictation
+```
+
+**Run all tests - they should ALL PASS**:
+```bash
+uv run pytest tests/unit/test_dictation_service.py -v
+# Expected: 3 passed
+```
+
+**Commit the complete implementation**:
+```bash
+git add app/services/dictation.py
+git commit -m "feat: add validation and permission checks to create_dictation
+
+GREEN phase - all tests passing.
+
+Changes:
+- Add role check (only doctors can create dictations)
+- Add title validation (title is required)
+- Raise appropriate exceptions for violations"
+```
+
+**Step 5: Refactor (REFACTOR)**
+
+Improve code quality while keeping tests green:
+
+```python
+# app/services/dictation.py
+from typing import TypedDict
+
+class DictationCreateData(TypedDict):
+    """Type definition for dictation creation data"""
+    title: str
+    audio_file: str
+    duration: int
+
+async def create_dictation(
+    db: AsyncSession,
+    user: User,
+    data: DictationCreateData
+) -> Dictation:
+    """
+    Create a new dictation
+
+    Args:
+        db: Database session
+        user: User creating the dictation (must be doctor)
+        data: Dictation creation data
+
+    Returns:
+        Created Dictation object
+
+    Raises:
+        PermissionError: If user is not a doctor
+        ValueError: If required fields are missing
+    """
+    _validate_user_can_create(user)
+    _validate_dictation_data(data)
+
+    dictation = Dictation(
+        title=data["title"],
+        audio_file=data["audio_file"],
+        duration=data["duration"],
+        doctor_id=user.id,
+        status="pending",
+    )
+
+    db.add(dictation)
+    await db.commit()
+    await db.refresh(dictation)
+
+    return dictation
+
+
+def _validate_user_can_create(user: User) -> None:
+    """Validate that user has permission to create dictations"""
+    if user.role != UserRole.DOCTOR:
+        raise PermissionError("Only doctors can create dictations")
+
+
+def _validate_dictation_data(data: dict) -> None:
+    """Validate dictation creation data"""
+    if "title" not in data or not data["title"]:
+        raise ValueError("Title is required")
+```
+
+**Run all tests - they should STILL PASS**:
+```bash
+uv run pytest tests/unit/test_dictation_service.py -v
+# Expected: 3 passed (no changes in behavior)
+```
+
+**Commit the refactoring**:
+```bash
+git add app/services/dictation.py
+git commit -m "refactor: extract validation helpers in dictation service
+
+REFACTOR phase - improve code organization while keeping tests green.
+
+Changes:
+- Extract validation into separate functions
+- Add TypedDict for better type safety
+- Improve docstrings with Raises section
+- Better separation of concerns
+
+All tests still passing, no behavior changes."
+```
+
+**Step 6: Update Documentation**
+
+Once ALL tests are passing and code is refactored:
+
+```bash
+# Update TODO.md to mark task as complete
+# Update Test_Targets.md to update coverage
+# Add API documentation if needed
+```
+
+**Commit documentation updates**:
+```bash
+git add TODO.md Test_Targets.md
+git commit -m "docs: update TODO and test targets for dictation creation
+
+Mark dictation creation feature as complete:
+- TODO.md: Mark task as [x] completed
+- Test_Targets.md: Update coverage (90%+ for dictation service)
+
+All tests passing (3/3), feature complete."
+```
+
+#### Git Commit Strategy During TDD
+
+**Commit FREQUENTLY** during TDD cycle:
+
+1. **RED commits**: Commit failing tests
+   ```bash
+   git commit -m "test: add failing test for <feature>"
+   ```
+
+2. **GREEN commits**: Commit when tests pass
+   ```bash
+   git commit -m "feat: implement <feature> to pass tests"
+   ```
+
+3. **REFACTOR commits**: Commit improvements
+   ```bash
+   git commit -m "refactor: improve <aspect> while keeping tests green"
+   ```
+
+4. **FIX commits**: Commit bug fixes with tests
+   ```bash
+   git commit -m "fix: resolve <bug> - add regression test"
+   ```
+
+5. **DOCS commits**: Commit documentation after feature complete
+   ```bash
+   git commit -m "docs: update documentation for <feature>"
+   ```
+
+**Commit Message Format**:
+```
+<type>: <subject>
+
+<body>
+
+<footer>
+```
+
+**Types**:
+- `test`: Adding or modifying tests (RED phase)
+- `feat`: New feature implementation (GREEN phase)
+- `fix`: Bug fix with test
+- `refactor`: Code improvement without behavior change
+- `docs`: Documentation updates
+- `chore`: Maintenance tasks
+
+**Example TDD commit sequence**:
+```bash
+# 1. RED phase
+git commit -m "test: add failing test for user authentication"
+
+# 2. GREEN phase
+git commit -m "feat: implement basic user authentication"
+
+# 3. More RED
+git commit -m "test: add edge case tests for invalid credentials"
+
+# 4. More GREEN
+git commit -m "feat: add validation for authentication credentials"
+
+# 5. REFACTOR
+git commit -m "refactor: extract token generation to separate function"
+
+# 6. DOCS
+git commit -m "docs: update TODO.md - authentication feature complete"
+```
+
+#### Testing Best Practices
+
+**Coverage Requirements**:
+- **Minimum 80%** overall backend coverage
+- **100%** coverage for security-critical code
+- **90%+** coverage for business logic
+- **70%+** coverage for frontend
+
+**Test Organization**:
+```
+tests/
+├── unit/              # Fast, isolated tests (no DB, no network)
+│   ├── test_security_password.py
+│   ├── test_security_jwt.py
+│   └── test_user_model.py
+├── api/               # API endpoint tests (with DB)
+│   ├── test_auth_endpoints.py
+│   └── test_dictation_endpoints.py
+├── integration/       # Full workflow tests
+│   └── test_dictation_workflow.py
+└── conftest.py       # Shared fixtures
+```
+
+**Running Tests During Development**:
+
+```bash
+# Run specific test file
+uv run pytest tests/unit/test_dictation_service.py -v
+
+# Run specific test
+uv run pytest tests/unit/test_dictation_service.py::test_create_dictation_success -v
+
+# Run with coverage
+uv run pytest tests/unit/ --cov=app --cov-report=term-missing
+
+# Run fast tests only (exclude slow integration tests)
+uv run pytest tests/unit/ -v
+
+# Watch mode (re-run on file changes) - requires pytest-watch
+uv run ptw tests/unit/ -- -v
+```
+
+**Test Naming Convention**:
+- `test_<function_name>_<scenario>_<expected_result>`
+- Examples:
+  - `test_create_dictation_success`
+  - `test_create_dictation_invalid_user_raises_error`
+  - `test_verify_password_wrong_password_returns_false`
+
+#### Documentation Updates After Tests Pass
+
+**Once ALL tests are GREEN**, update these files:
+
+**1. Update TODO.md**:
+```markdown
+- [x] Implement dictation creation endpoint
+```
+
+**2. Update Test_Targets.md** (if applicable):
+```markdown
+✅ Dictation Service (3/3 tests, 95% coverage)
+- Create dictation
+- Validation
+- Permission checks
+```
+
+**3. Add API Documentation** (if new endpoint):
+```python
+@router.post("/dictations", response_model=DictationResponse, status_code=201)
+async def create_dictation(
+    data: DictationCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dictation:
+    """
+    Create a new dictation
+
+    **Permissions**: Doctors only
+
+    **GDPR**: Creates audit log entry
+
+    Args:
+        data: Dictation creation data
+        current_user: Authenticated user (must be doctor)
+        db: Database session
+
+    Returns:
+        Created dictation
+
+    Raises:
+        403: If user is not a doctor
+        400: If validation fails
+    """
+    return await create_dictation(db, current_user, data.dict())
+```
+
+**4. Update README.md** (if major feature):
+Add to features list, update examples
+
+**5. Commit documentation**:
+```bash
+git add TODO.md Test_Targets.md README.md app/api/v1/endpoints/dictations.py
+git commit -m "docs: update documentation for dictation creation feature
+
+Updates:
+- TODO.md: Mark dictation creation as complete
+- Test_Targets.md: Add coverage metrics (95%)
+- README.md: Add dictation creation to features
+- Add comprehensive docstring to API endpoint
+
+All tests passing (68/68)"
+```
+
+#### TDD Anti-Patterns to AVOID
+
+**❌ Don't write all tests first**:
+```python
+# BAD - Writing 50 tests before any implementation
+def test_feature_1(): ...
+def test_feature_2(): ...
+# ... 48 more tests
+def test_feature_50(): ...
+```
+
+**✅ Do write tests incrementally**:
+```python
+# GOOD - One test, implement, one test, implement
+def test_basic_feature():
+    # Write test, implement, commit
+
+# After basic works:
+def test_edge_case():
+    # Write test, implement, commit
+```
+
+**❌ Don't skip the RED phase**:
+```python
+# BAD - Writing implementation first
+def create_user(...):
+    # Implementation without test
+
+# Then writing test
+def test_create_user():
+    # Test that might not fail
+```
+
+**✅ Do write failing test first**:
+```python
+# GOOD - Test first (will fail)
+def test_create_user():
+    user = create_user(...)  # Doesn't exist yet
+    assert user.id is not None
+
+# Then implement to make it pass
+def create_user(...):
+    # Minimal implementation
+```
+
+**❌ Don't commit broken code**:
+```bash
+# BAD - Code doesn't compile
+git commit -m "feat: half-implemented feature"
+```
+
+**✅ Do commit working code (even if incomplete)**:
+```bash
+# GOOD - Tests pass, feature incomplete
+git commit -m "feat: implement basic user creation
+
+GREEN phase - basic functionality working.
+TODO: Add validation and edge cases."
+```
+
+#### TDD for Bug Fixes
+
+**ALWAYS write regression test first**:
+
+```python
+# 1. Write test that reproduces the bug (RED)
+@pytest.mark.asyncio
+async def test_dictation_claim_race_condition():
+    """
+    Regression test for bug #42
+
+    Bug: Two secretaries could claim same dictation simultaneously
+    Expected: Second claim should fail with 409 Conflict
+    """
+    # Test that currently fails due to bug
+    ...
+
+# 2. Fix the bug (GREEN)
+# ... implement fix ...
+
+# 3. Verify test passes
+# 4. Commit with reference to bug
+git commit -m "fix: prevent race condition in dictation claiming
+
+Fixes bug where two secretaries could claim same dictation.
+
+Solution: Add database-level unique constraint and handle
+concurrent claims with optimistic locking.
+
+Closes #42" \
+  --trailer "Reported-by: Dr. Smith"
+```
+
 ---
 
 ## Terraform Development Guidelines
