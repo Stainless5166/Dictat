@@ -66,17 +66,17 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 6. Core API - Dictations & Transcriptions (11 tasks)
 
-- [ ] Create dictation CRUD endpoints
-- [ ] Build dictation listing with pagination and filtering
-- [ ] Implement dictation assignment to secretaries
-- [ ] Create work queue endpoint for secretaries
-- [ ] Build dictation claiming mechanism
-- [ ] Implement status transitions (pending→in_progress→completed→reviewed)
-- [ ] Create transcription CRUD endpoints
+- [x] Create dictation CRUD endpoints
+- [x] Build dictation listing with pagination and filtering
+- [x] Implement dictation assignment to secretaries
+- [x] Create work queue endpoint for secretaries
+- [x] Build dictation claiming mechanism
+- [x] Implement status transitions (pending→in_progress→completed→reviewed)
+- [x] Create transcription CRUD endpoints
 - [ ] Add markdown validation for transcriptions
-- [ ] Implement transcription autosave functionality
-- [ ] Build review/approval endpoint for doctors
-- [ ] Create revision history for transcriptions
+- [x] Implement transcription autosave functionality
+- [x] Build review/approval endpoint for doctors
+- [ ] Create revision history for transcriptions (Phase 3)
 
 ---
 
