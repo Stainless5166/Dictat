@@ -126,6 +126,21 @@ class TestPasswordVerification:
 class TestPasswordSecurity:
     """Test security aspects of password handling"""
 
+    def test_hash_uses_configured_algorithm(self) -> None:
+        """Test that password hashing uses the configured algorithm from settings"""
+        from app.core.config import settings
+
+        password = "TestPassword123"
+        hashed = hash_password(password)
+
+        # Verify hash uses the configured algorithm
+        if settings.PASSWORD_HASH_ALGORITHM == "argon2":
+            assert hashed.startswith("$argon2"), f"Expected argon2 hash, but got: {hashed[:20]}"
+        elif settings.PASSWORD_HASH_ALGORITHM == "bcrypt":
+            assert hashed.startswith("$2b$"), f"Expected bcrypt hash, but got: {hashed[:20]}"
+        else:
+            pytest.fail(f"Unknown algorithm: {settings.PASSWORD_HASH_ALGORITHM}")
+
     def test_hash_format_contains_algorithm(self) -> None:
         """Test that hash contains algorithm identifier"""
         password = "Test123"
