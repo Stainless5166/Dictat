@@ -53,14 +53,14 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 5. File Storage - Docker Volumes (8 tasks)
 
-- [ ] Configure Docker volume for persistent audio storage
-- [ ] Create volume mount definitions in docker-compose.yml
-- [ ] Implement audio file upload endpoint with streaming
-- [ ] Add audio format validation (mp3, wav, m4a, ogg)
-- [ ] Implement chunked upload for large audio files
-- [ ] Create audio streaming endpoint (no local caching)
-- [ ] Add audio playback range request support (HTTP 206)
-- [ ] Implement file deletion endpoint with security checks
+- [x] Configure Docker volume for persistent audio storage
+- [x] Create volume mount definitions in docker-compose.yml
+- [x] Implement audio file upload endpoint with streaming
+- [x] Add audio format validation (mp3, wav, m4a, ogg)
+- [x] Implement chunked upload for large audio files
+- [x] Create audio streaming endpoint (no local caching)
+- [x] Add audio playback range request support (HTTP 206)
+- [x] Implement file deletion endpoint with security checks
 
 ---
 
@@ -260,14 +260,14 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 27 / 140 (19.3%)
+**Completed**: 35 / 140 (25.0%)
 
 ### By Category
 - Project Setup: 5/5
 - Database: 6/6
 - Authentication: 6/6
 - Authorization (OPA): 5/5
-- File Storage (Docker Volumes): 0/8
+- File Storage (Docker Volumes): 8/8
 - Core API: 0/11
 - Background Tasks: 0/5
 - Security & Compliance (GDPR): 0/14
