@@ -43,11 +43,11 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 ## 4. Authorization - Open Policy Agent (5 tasks)
 
-- [ ] Set up Open Policy Agent (OPA) container in Docker Compose
-- [ ] Write OPA policies for role-based access (doctor/secretary/admin)
-- [ ] Create OPA client integration in FastAPI
-- [ ] Build authorization dependency using OPA
-- [ ] Test OPA policies for all user roles and permissions
+- [x] Set up Open Policy Agent (OPA) container in Docker Compose
+- [x] Write OPA policies for role-based access (doctor/secretary/admin)
+- [x] Create OPA client integration in FastAPI
+- [x] Build authorization dependency using OPA
+- [x] Test OPA policies for all user roles and permissions
 
 ---
 
@@ -260,13 +260,13 @@ Comprehensive task list for building the Dictat medical dictation service.
 
 **Total Tasks**: 140
 
-**Completed**: 22 / 140 (15.7%)
+**Completed**: 27 / 140 (19.3%)
 
 ### By Category
 - Project Setup: 5/5
 - Database: 6/6
 - Authentication: 6/6
-- Authorization (OPA): 0/5
+- Authorization (OPA): 5/5
 - File Storage (Docker Volumes): 0/8
 - Core API: 0/11
 - Background Tasks: 0/5
